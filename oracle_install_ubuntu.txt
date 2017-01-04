@@ -1,0 +1,86 @@
+1) Download the Oracle 11gR2 express edition installer from the link given below:
+http://www.oracle.com/technetwork/products/express-edition/downloads/index.html
+
+2) Unzip it :
+unzip oracle-xe-11.2.0-1.0.x86_64.rpm.zip
+
+3) Install the following packages :
+sudo apt-get install alien libaio1 unixodbc vim
+
+4) Convert the red-hat ( rpm ) package to Ubuntu-package :
+sudo alien --scripts -d oracle-xe-11.2.0-1.0.x86_64.rpm
+
+5) Do the following pre-requisite things:
+a) Create a special chkconfig script :
+
+sudo vim /sbin/chkconfig
+
+(copy and paste the following into the file )
+#!/bin/bash
+# Oracle 11gR2 XE installer chkconfig hack for Ubuntu
+file=/etc/init.d/oracle-xe
+if [[ ! `tail -n1 $file | grep INIT` ]]; then
+echo >> $file
+echo '### BEGIN INIT INFO' >> $file
+echo '# Provides: OracleXE' >> $file
+echo '# Required-Start: $remote_fs $syslog' >> $file
+echo '# Required-Stop: $remote_fs $syslog' >> $file
+echo '# Default-Start: 2 3 4 5' >> $file
+echo '# Default-Stop: 0 1 6' >> $file
+echo '# Short-Description: Oracle 11g Express Edition' >> $file
+echo '### END INIT INFO' >> $file
+fi
+update-rc.d oracle-xe defaults 80 01
+
+Save the above file and provide appropriate execute privilege :
+       sudo chmod 755 /sbin/chkconfig	
+b) Set the Kernel parameters :
+Oracle 11gR2 XE requires to set the following additional kernel parameters:
+sudo vim /etc/sysctl.d/60-oracle.conf 
+(Enter the following) 
+# Oracle 11g XE kernel parameters  
+fs.file-max=6815744  
+net.ipv4.ip_local_port_range=9000 65000  
+kernel.sem=250 32000 100 128 
+kernel.shmmax=536870912 
+(Save the file) 
+Note: kernel.shmmax = max possible value , e.g. size of physical RAM ( in bytes e.g. 512MB RAM == 512*1024*1024 == 536870912 bytes ) 
+Verify the change : 
+sudo cat /etc/sysctl.d/60-oracle.conf 
+Load new kernel parameters: 
+sudo service procps start  
+Verify: sudo sysctl -q fs.file-max 
+       -> fs.file-max = 6815744 
+6) Now you are ready to install Oracle 11gR2 XE. Go to the directory where you created the ubuntu package file in Step 4 and enter following commands in terminal :
+i) sudo dpkg --install oracle-xe_11.2.0-2_amd64.deb  
+
+sudo /etc/init.d/oracle-xe configure 
+Enter the following configuration information:
+A valid HTTP port for the Oracle Application Express (the default is 8080)  
+A valid port for the Oracle database listener (the default is 1521) 
+A password for the SYS and SYSTEM administrative user accounts
+Confirm password for SYS and SYSTEM administrative user accounts
+Whether you want the database to start automatically when the computer starts (next reboot).
+7) Before you start using Oracle 11gR2 XE you have to set-up more things :
+a) Set-up the environmental variables :
+Add following lines to your .bashrc :
+export ORACLE_HOME=/u01/app/oracle/product/11.2.0/xe
+export ORACLE_SID=XE
+export NLS_LANG=`$ORACLE_HOME/bin/nls_lang.sh`
+export ORACLE_BASE=/u01/app/oracle
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib:$LD_LIBRARY_PATH
+export PATH=$ORACLE_HOME/bin:$PATH
+ 
+b) execute your .profile to load the changes:
+     
+          . ./.profile
+
+8) Start the Oracle 11gR2 XE :
+
+sudo service oracle-xe start
+
+The output should be similar to following :
+user@machine:~$ sudo service oracle-xe start
+Starting Oracle Net Listener.
+Starting Oracle Database 11g Express Edition instance.
+user@machine:~$

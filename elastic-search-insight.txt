@@ -1,0 +1,146 @@
+full text   	vs Exact values 
+whole number  	   (search within a string)
+Strings  			"this is a new session for elasticsearch"
+date
+
+
+
+
+analysis
+
+analyzers 
+   tokenis+ normalization 
+   tockernizer+ (token filer) 
+
+standard analyzer 
+  1) standard tokenizer -- breading sentences to words 
+  2) lowecase token filter 
+  3) stop word filter 
+
+
+language specific analyzers 
+  English analyzer 
+   1) standard tokenizer
+   2) lower case filter 
+   3) english stemmer
+   4) engish stop words 
+
+knowing feild mapping is very important 
+
+core field type
+Strings: string 
+Datetime: date
+Whole numbers: byte, short, int ,long    
+Floats: float , double 
+Booleans: boolean 
+Ojbjects: object
+
+Also : multi_field ,  geo_point , geo_shape
+
+tokernizer results to terms     
+
+
+Can : add new fields 
+
+PUT /myapp/tweet/_mapping -d '
+		{
+			"tweet":{
+				"properties":{
+					...
+				}
+			}
+		}
+'
+
+Cannot chage existing fields because data already exists for that fileds 
+
+if you really want to changes fileds then u have to delete index and recreate it with correct mapping 
+
+DELET /myapp
+
+PUT  /myapp -d '{"_mapping ":{}}'
+
+Full body search , this is a type of search we are using in our application 
+
+defaults:
+GET /_search -d '
+	{
+		"query":{
+			"match_all":{}
+		},
+		"from":0
+		"to":0
+	}
+'
+
+actual query (Query DSL): rich flexible query language
+
+we don't have only query we also have filters 
+
+Filters 			|    Queries 
+exact match 		|	 full text search 
+binary yes/no 		|     relevance scoring
+fast 				|     heavier 
+cacheable 			| 	non cacheable 
+
+
+Combining filters and queries 
+
+{
+	"query":{
+
+		"filtered":{
+
+			{
+				"query":{
+						"match":{
+							"tweet":"search"
+							}
+					}
+			},{
+				"filters":{
+						"terms ":{
+								"nick":"@marry"
+							}
+				}
+			}
+
+		}
+
+	}
+}
+
+
+Autocomplete 
+
+N-grams == window on a words 
+good for partial word matching 
+
+
+Edge N-grams == anchored N-grams 
+j
+jo
+joh
+john
+s
+sm
+smi
+smith
+
+
+Using Edge N-grams tocken filter 
+
+{
+	"filter":{
+		"autocomplete":{
+				"type":"edge_ngram",
+				"min_gram":"1",
+				"max_gram":"20",
+
+		}
+	}
+}
+
+
+
+

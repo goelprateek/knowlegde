@@ -1,0 +1,6 @@
+how to enable wifi if not enabling 
+
+$rfkill unblock all
+$sudo /etc/init.d/networking restart
+$sudo rm /etc/udev/rules.d/70-persistence-net.rules
+$sudo reboot

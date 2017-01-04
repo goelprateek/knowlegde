@@ -1,0 +1,99 @@
+hadoop data types 
+
+What serialization is ?
+When two process communicates say map communicate to reduce , in this case data is transferred in form of structured objects.
+
+Serialization is the process of turning structured data into byte stream for transmission over network or for writing into a persistence data storage 
+
+De-serialization on other hand is reverse process of serialization i.e converting byte stream into structured object 
+
+Interprocess communication are happen by RPC (Remote Procedure call) 
+
+Feature of serialization framework 
+1) compact -- message that is transferred over the network should be as small as possible , smaller the data transfer  	better would be the efficiency .
+2) fast -- serialization and de-serialization should happen quickly 
+3) Extensible -- protocols changes over a period of time so it should be able to meet the requirements .
+4) Interoperable -- it is desired that the process written in one language can be able to communicate with process written in another language 
+
+for example a process written in java should be able to communicate with other process written in other language say python 
+
+Why hadoop needed new data types ?
+Java inbuilt serialization has following short comings 
+ -- it wasn't compact, it has lot of overhead when data is serialized . Java serialization send meta-data like class name along with the data send , this increase the serialization time as well as the processing time . It was designed as general purpose interprocess communication 
+ -- sorting and random access was difficult 
+ -- general purpose mechanism 
+
+
+ Hadoop serialization mechanism assumes that the client already know about the data format that is be be expected from the sender . this decreases lot of overhead .
+ That's why writ-able framework was designed . 
+
+
+
+
+ 												   	Primitives 			  Others 
+ <Writable> <------- <WritableComparable>   <----   BooleanWritbale       NullWritable 
+org.apache.fs.haddop.io   |							ByteWitable			  Text
+               |									IntWritable			  BytesWritable 
+               |									VIntWritable		  MD5Writable	
+               |									FloatWritable		  ObjectWritable
+               |			                        LongWritable          GenericWritable 
+               |									VLongWritable 
+               |									DoubleWritable
+               |									VDoubleWritable
+               |
+               |----- < ArrayWritabel>	 
+               |----- < TwoDArrayWrritable>	
+               |----- < AbstractMapWritable>	 
+
+
+
+Writable is a interface which is further extended by writableComparable interface.  
+
+
+
+Java Primitive 					Writable Implementation 		Serialized Size
+Boolean                            BooleanWritable                1
+byte 							   ByteWritable				      1  
+short							   ShortWritable	              2 
+int                                IntWritable                    4
+								   VIntWritable					  1-5 		
+Float 							   FloatWritable	              4
+Long 	 						   LongWritabel                   8
+								   VLongWritabel 	              1-9  
+Double 							   DoubleWritable                 9
+String                             Text                           - 
+
+
+Even a CustomWritable implementation can be done by implementing WritaableComparale interface , where we have to override following methods 
+1) write()
+2) readFileds()
+3) compareTo()
+4) hashCode()
+5) equals()
+6) toString()
+
+Because they are inherit from interface or using in other stages like sort shuffle 
+
+As you see writable framework is language dependent (as written in java)
+
+So Avro a language neutral serialization system was conceptualize 
+
+AVRO
+
+1) Apache Avro is a language-neutral data serialization system
+2) data format can be processed by many languages ( currently c,c#,c++,java,ruby,python)
+3) Another advantage of avro is it future-proof the data , allowing data to potentially outlive the language use to read and  write it 
+4) Avro assumes that schema is always present at the both time (read/write)
+5) Avro schema are written in json 
+ e.g
+ {
+ "type":"record",
+ "name":"TwoString",
+ "doc":"A pair of string",
+ "field":[
+ 	{"name":"","type":""},
+ 	{"name":"","type":""}
+ ]
+ }
+
+

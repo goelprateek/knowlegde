@@ -1,0 +1,10 @@
+hadoop streaming 
+
+main idea of hadoop design is data processing is independent of language or atleast shuld be so flexible that program can be designed in any language to do the processing 
+
+Idea is that data should be outlived of any programing language 
+
+hadoop streaming uses unix std.io as a interface between hadoop and your program 
+
+Hadoop pipes 
+Its just a name to hadoop c++ . Unlike hadoop straming with uses the unix standard stream to interact with hadoop , c++ uses socket as a channel to communicate with task tracker 

@@ -1,0 +1,66 @@
+Performance tuning features 
+learning about few performance tuning feature in hadoop 
+
+1)Speculative Execution 
+Advantage that hadoop have that it breaks a large task into bunch of small task , and process them in parallel . This gives hadoop an advantage over legacy single node processing  ,and so hadoop can produce high throughput . 
+
+But if in case one of its task perform poorly , performance of whole job comes down . 
+
+Lets take a scenario 
+where we have three task in parallel and out of three any one of them is lagging behind other task or performing poorly , this can be due to  hardware degradation or software miss configurations as well . In those cases hadoop relaunches the task to another machine . then 1 that finishes first (out of both ) would be taken for the result and previous one would be killed 
+
+these are two key points that keep in mind when thinking of speculative execution 
+Key Points : 
+ 1) Speculative task are launched only after all tasks of a job have been launched  .
+ 2) It is an optimize feature and not reliability feature 
+  which implies that , if a task is lagging behind because of buggy user code (most of the cases) . hadoop is not able to fix it , diagnose it or pin point on the error of code.
+
+  It is just just ensuring that the underlying hardware 	and software configurations are not the reason for the slow progress of the task and so it would try to run the task on different node , so whole job finishes as quickly as possible . Either of the original task or speculative task finishes first it would be considered and other one will be killed 
+
+  Properties in regard of speculative task are :
+  mapred.map.tasks.speculative.execution 
+  mapred.reduce.tasks.speculative.execution 
+
+  these are boolean properties that are by default set to true , which implies speculative execution is enable by default .
+  these properties are recommended to be true , they can be set to false as well , thus not allowing speculative execution of task . This would be helpful if cluster is already overloaded and we don't overload cluster with speculative task 
+
+  some interrogation prefer no speculative task on reducer side , it is done so because to start another copy of reducer  task map output need to be fetched from the network , which would considerably increases load on network 
+
+
+2) Task JVM Reuse :
+This feature can be use for performance gain  in case these if there are lot of small jobs . 
+
+For small jobs overhead of 	launching a new jvm is significant , task run on different jvm , so as to segregates 
+them with the long running system demons . Reason is that user code has high probability of being erroneous , and in that case it will disturb the system demons and hence the jvm are separated .
+a task that qualifies as small task are called uber task in yarn and they are run on same jvm as application master . The property "mapred.job.reuse.jvm.nu.task" decide how many task can run on the jvm 1 is default , -1 can be set to indicate there is no limit to reuse the jvm 
+
+3) skipping bad records 
+there might be chances that task in not able to complete because of data issue rather than code issue . when input data is too large then this situation is likely to happen . For this reason your program would not process the bad record if it receives it but rather handle it with exception and maintain a counter of such records 
+
+there are situation where  even after handling bad record there are bad records . So to handle it mapred framework have a feature to handle bad record 
+
+Let us simulate it 
+consider there are 30 input records (input split) and 4th one out of them is bad record . 
+task tracker process each of the input split to produce key value pair  , but when it receives the 4th input split i.e bad record it would fail 
+Observing this job tracker would relaunch the task tracker on another machine to ensure that underlying hardware or software configuration is not the issue. 
+Task tracker again process the input spilt and would fail on the bad record again , and again job tracker would spawn the new task tracker . It process the record and would fail on bad record .
+
+ It tells the job tracker that task tracker again failed with information about which record it is failed . and job tracker switch on the skipping mode .
+
+ Now a new task tracker is launched on another machine and when it encounter the bad record it skip it and continue processing of records .
+
+ So there are three failure before skipping mode is on . It is designed so that because if every task tracker try to communicate the record on which it has failed it would costs two potential issues 
+ 1) a lot of network bandwidth is utilized to communicate record information 
+ 2) job tracker would be loaded with lot of failure data , it would get difficult for job tracker to keep  track      of   all the failure records .
+
+ If you would like to use this feature effectively you would like to increase the value of property 
+ "mapred.map.max.attampts" 
+ "mapred.reduce.max.attampts" 
+ which controls maximum number of retries on map and reduce task respectively whose default value is 4 
+
+
+
+
+
+
+

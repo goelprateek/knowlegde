@@ -1,0 +1,58 @@
+Map reduce introduction in hadoop
+Terminology 
+1) Split  -- is nothing just fixed chunk of data that is served as input to map task 
+   don't confuse with blocks and splits as they are totally two different concept . 
+   Blocks belongs to hdfs world and split belongs to map/reduce world 
+   Block is smallest unit of data stored in hdfs while splits are data input to map jobs 
+
+   Map task process the split and produces an output and write it to local disk and not on the hdfs with replication 
+
+Map Phase:
+1) Data locality    
+2) Optical split size equals block size 
+3) Map output is on local disk as it is intermediate result and not on hdfs (with high replication factor) , because it  as no meaning till final result has been calculated , so to put this type of data in hdfs with high replication is unnecssary overhead .
+So it is only stored till the time reducer has picked up the result and process it successfully . It may happen that the reducer may fail in that case job tracker would reuse the map output to run reducer on another node manager . So job tracker cleans up map output intermediate data only after getting successful  completionn of reducer job 
+
+It should be noted that map output is  written to hdfs only when 0 reducers are specified . In that case map output is final result and final result has to be stored on hdfs as it increase resilient to loss because of any hardware failure 
+
+next phase is shuffle and sort , as map output is merged and sorted and partitioned . So there are three steps that are happened here
+1) merge i.e. combine the output of all the map jobs 
+2) sort which is sorting map output based on key 
+3) partitioning which means that output is divided based on the key value 
+
+Final phase is Reduce phase .
+Reduce Key points : 
+As reducers wont get the data locally it would be fetched from the network .
+
+Second thing to note here is that number of reducers are not decided based on the size of input data unlike map in which number of maps depends on the input split size . 
+
+Number of reducers size is decided independently . 
+
+Reducers output is written to hdfs for application reliability .
+
+
+
+
+
+map: [K1,V1] --> list(K2,V2)
+combiner: (k2,list(V2)) --> list(k2,V2)
+reducer: (k2,list(V2)) --> list(k2,V2)
+partition: [K2,V2] --> integer
+
+
+Job job = new Job();
+
+job.setJarClassName(Driver.class);
+job.setName("job");
+
+job.setMapperClass(Mapper.class);
+Job.setMapOutputKeyClass(LongWritable.class);
+Job.setMapOutputValueClass(Text.class);
+
+job.setnumReducer(1);
+job.setReducerClass(Reducer.class);
+job.setOutputFormatKeyClass(LongWritable.class);
+job.setOutputValueClass(Text.class);
+
+job.setInputFormatClass(TextOutputFormat.class);
+job.setOutputFormatClass(TextInputFormat.class);

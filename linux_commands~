@@ -1,0 +1,23 @@
+find . -name "*.zip" -exec unzip {} \;
+
+sed 's/\"//g' file.txt	
+
+
+--  replacing string within a file of directory 
+find ./ -type f -exec sed -i 's/string1/string2/g' {} \;
+
+
+find . -type f | xargs grep -l \"
+
+
+${parameter:-defaultValue}	Get default shell variables value
+${parameter:=defaultValue}	Set default shell variables value
+${parameter:?"Error Message"}	Display an error message if parameter is not set
+${#var}	Find the length of the string
+${var%pattern}	Remove from shortest rear (end) pattern
+${var%%pattern}	Remove from longest rear (end) pattern
+${var:num1:num2}	Substring
+${var#pattern}	Remove from shortest front pattern
+${var##pattern}	Remove from longest front pattern
+${var/pattern/string}	Find and replace (only replace first occurrence)
+${var//pattern/string}	Find and replace all occurrences

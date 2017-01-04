@@ -1,0 +1,32 @@
+shuffle and sort  in map/reduce
+
+sort & shuffles are heart to every map reduce job 
+
+Map program process input key and values , and then map output is sorted and transferred to reducer and this is known as shuffle 
+
+Map process the input and the output is not written directly to the disk , but it is written to a in-memory buffer 
+size of this buffer is decided by the property "io.sort.mb" defaults to 100mb . As map writes to the buffer buffer start filling up and when buffer reaches to its threshold which is by default 80% i.e 80 mb (io.sort.spillpercent). A background thread start writing the content of buffer to the local disk (spill to the local disk).
+map output continuous to be written on the buffer while spill takes place . If map have more output to be written on buffer then there buffer gets full , in this case map take a nap for a while until background thread empty the buffer . After spill completes map may again reaches to its threshold because of data writes in this case another spill would be written . Spill are written in round robin fashion and these are written to directory specified in property "mapred.local.dir" , so there are many spills before the last <key, value> pair written by the map task .
+Each spill is partitioned and sorted by the key and this is run through a combiner if a combiner function is designed to work with the job , this all is done by a background thread . Afer all this is done all spills are merged to an output file which is partitioned and sorted . If more than three spills combined together then combiner function is again run through the final output . Remember than combiner function will run many times without changing the final result , and combiner function reduces the size of output , which is advantageous as there would be less amount of data that need to be transferred to the reducer machine . 
+
+If map output is too much large then it is recommended to compress the output of map function to reduce the amount of data . this can be done by setting up the property "mapred.compress.map.output" to true and compression scheme can be specified by property "mapred.map.output.compression.codec" 
+
+After this comes a copy phase 
+there may be other map task are running and completed at different time , as soon as they finish they notify application master , which ask the reducer to copy the result to the local disk , and partitions are copied by the reducer from the network .
+
+After this comes a sort phase:
+In this phase reducer merges the maps output which are then feed into the reducer to create the final result 
+Sort phase is more then that 
+property here that plays an important part is Merge factor and is set by property "io.sort.factor" 10 by default .
+it signifies how many files can merge in a single go . for e.g
+
+If a reducer receives 30 files from different maps , then these can be merges in batches of 10 and in three round it can create three intermediate 3 merged files and in final round it would be feed directly to the reducer . Note that these merged files need to be sorted by the keys as well .
+
+To increase the io efficiency actual algorithm behaves a little bit different . It picks first three files (map output file ) and merged together , and then pick up the next batches of 10 and create a merged files . In final round it will take the renaming 7 file and directly feed them to the reducer . doing like this it increases disk io efficiency greatly 
+
+
+
+
+
+
+

@@ -1,0 +1,109 @@
+HDFS Architecture.
+
+HDFS works on master slave concept 
+
+Master 			|			Slave
+Name Node	    |        Data Nodes (Store data block)
+
+Name Node :- responsible for all management of storage space on data nodes 
+Data Node :- responsible for doing actual ground work of storing data into data blocks
+
+Name Node perform function of keeping track of complete file system by managing two things 
+1) Namespace image ( meta data like block size , permission e.t.c)
+2) Edit Logs (the activities done)
+
+Namespace is meta-data about the files and directories which are stored in hdfs , it contains data about all the blocks to which file they are associated with and on which data node it resides . 
+
+Edit log is nothing just track of all the activities that perform by the client , these logs are keeping file up are grows up as the activity on hdfs keeps on happening 
+
+So out of these two edit logs are one that keeps on growing at a faster pace 
+
+These two combines forms a complete file system images giving details of all files and blocks on hdfs 
+
+Block information is updated by name node as and when new data node is added to cluster i.e. as soon as data node boots up and connected to network it send information to name node about the blocks it has , and thus name node update its name node image with the data 
+ 
+Both namespace image and edit logs are maintained in main memory of name node , this help name node to quickly lookup for the blocks as and when required  
+
+
+Now take a look at case when name node fails 
+
+complete file system goes down and would be unavailable as complete namespace image and data block information is lost , for this reason name node is considered to be single point of failure (SPOF) . that is why is required for name node to be resilient to hardware failures and it is highly advisable to spend more on name node hardware .
+
+Resilient Addition:
+1. Remote NFS mount 
+2. Secondary name node is also added .
+
+Secondary name node is not as another name node its work is totally different . Its sole purpose is to combine namespace image and edit log so that name node memory doesn't fills up because of ever increasing edit logs , it also create check points of namespace image and edit log  merge together and write to file , this helps name node to release the main memory occupied by edit logs till the point of last check point , and this is the only purpose of secondary name node 
+
+Secndary name node is just a java program that combine namespace image and edit logs and creates a checkpoint .
+
+This combine process of namespace image and edit logs is complex and takes much memory and cpu cycles , so secondary name node should be running on good hardware configuration as the job of combining namespace image and edit logs require good computing resources .
+
+So in case of failure of name node hadoop administrator requires to boot up another name node , this case is only with earlier releases of hadoop 
+
+hadoop .23 release have high availability features available with them , in those cases this situation is little improved 
+
+Namenode memory guideline  
+As size of cluster increases the number of blocks that name node has to take care off are also increases . Every data block in pool consumes some amount of name node main memory , so it is reasonable for name node memory to have enough space , so that it can efficiently manages the pool of data blocks 
+
+As a rule of thumb 
+1000MB per million storage blocks.
+lets take an example of 100 node cluster with 4tb disk space per node and block size of 64MB , and replication factor of 3 default 
+
+no of block possible = 100*4000000/64*3
+~2000000 
+so 2GB memory is good enough 
+
+HDFS design & architecture key points 
+1) HDFS is meant for large files and wont work efficiently with lots of small files 
+2) write once and read multiple time is the main principle .
+3) it follow master slave architecture . Name node is master node and data node is worker node 
+4) hdfs default block size is 64MB
+5) Large block size is to reduce seek overhead to around 1% of the transfer time 
+6) a file smaller than block size doesn't occupy a fill the block in hdfs .
+7) name node maintains namespace image and edit log files 
+8) failure of name node is critical , its hardware has to be most resilient 
+9) secondary name node has following purpose 
+  9.1) timely  combine  namespace image with edit logs and create a new file and mark the checkpoint , so as to avoid name node out of memory issue  as name node then clean its memory time to time .
+10) specification of name node should be equivalent to primary 
+11) name node is responsible for timely update the namespace image and edit log to local disk and remote network storage location . 
+
+
+HDFS New Features added to hadoop 0.2.3 release 
+
+1) HDFS federation 
+2) High availability
+
+HDFS Federation key points 
+HDFS federation introduces to addresses  limitation of  memory of name node to scalability 
+each name node is responsible for its name space volume  and block pool 
+Data nodes can be associated with multiple name node
+name node won't communicate to each other 
+Failure of one name node doesn't affect the availability of namespace managed by other name node 
+
+High Availability
+This feature is introduced to address issue of time taken to come back to stable state in case of name node failure 
+It take 30 minutes for name node to back into stable state after its failure .
+So to address this a name node is always running on standby , primary name node and standby name node shares the namespace , edit logs via highly available nfs storage mount . In future release zoo keeper would be used to transition from primary to standby one  
+
+In Case of failure the reserve name node (standby name node)  takes over and fenced the primary name node . 
+fencing is to avoid previously active name node to do any damage 
+fencing includes killing name node process , revoking shared access and disabling its network port of previous primary node 
+
+In certain situation its goes to an extend that it cuts the previously active name node from power supply itself , this technique is often called as STONITH (shoot other node in head). 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

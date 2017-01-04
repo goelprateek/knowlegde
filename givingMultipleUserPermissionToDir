@@ -1,0 +1,10 @@
+create a group 
+sudo groupadd group1
+
+add users to this group 
+sudo usermod -a -G group1 user1
+sudo usermod -a -G group1 user2
+
+add permission to group on directory
+sudo chgrp -R group1 /path/to/Dir
+sudo chmod -R 770 /path/to/the/directory

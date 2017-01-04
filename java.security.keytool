@@ -1,0 +1,15 @@
+Generating JKS java keystore file
+
+keytool -genkeypair
+		-alias mytest
+		-keyalg RSA
+		-keypass mypass
+		-keystore mytest.jks
+		-storepass mypass
+
+
+
+
+Export public key
+
+keytool -list -rfc -keystore mytest.jsk | openssl x509 -inform pem -pubkey

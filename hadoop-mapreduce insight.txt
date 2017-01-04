@@ -1,0 +1,88 @@
+Generation 2 of map reduce executions 
+
+Main chanages from classical map reduce is introduction of yarn
+
+
+yarn  next generation map reduce 
+-- yet another resource nagotiator / mapreduce2
+
+In classical map reduce it was noticed that sclability becomes bottlenect after inscrease in size of cluster 4000+ majorly because of the load of job tracker 
+
+In 2010 yahoo , begain the next generation mapreduce
+
+Main idea is to split the responsibility of job tracker into two 
+  Resource manager (job scheduling) -- which deals with job scheduling portion of the workload .
+  Application Manager -- which deals with task monitoring portion of workload 
+
+Programs written in map redule old api i.e mapreduce still works with yarn 
+
+With the introduction of yarn only the framework way of executing map reduce program changed so yarn supported both the program written in older api and new api 
+
+Advantages with yarn map/reduce on classical map reduce 
+1) scalability increased dramatically by splitting responsibility of job tracker into two 
+2) more than one yarn can co-exists in the same cluster , along with map reduce there can we any distibuted 	    framework along side it on same cluster 
+3) better utilization of memory with the introduction of container concept , container concept are similarly to the slots in classical map reduce , just like classic map reduce slots are fixed in nature , while containers are more flexible . 
+ in classical map reduce single task tracker have fixed number of slots specific for map task and reduce task , while in yarn containers can run map , reduce , or any other task as containers are flexible , this result in better memory utilization 
+
+ Entities in yarn 
+ 1) client -- it is responsible to submit the job and interact with map reduce and any hdfs framework 
+ 2) yarn resource manager -- which is responsbile for allocating  computing resources that are required by job 
+ 						In yarn resource manager , even job category can be classified int two 
+ 						1) scheduler -- which only deals with scheduling of job and doen't performing ang monitring 
+ 						2) application manager -- which monitors application statuses 
+ 3) Node manager -- it is present on each slave mode and its responsible for launch and manage containers 
+ 4) Mapreduce application master -- is responsible to carry out the execution of job of which is associated with 
+								it is the one responsible for cordinating with the task running , monitors its progress seggregated and sends its report to client , it is spwarn on the node manager on the instruction of resource manager , it spwrans for one job and terminate after completion 
+ 5) yarn child -- this is responsible for managing the run of map reduce task and is responsible for send regular 					updated to application master 
+ 6) distributed file system 
+
+
+
+
+
+steps 
+1. job get submitted to job client 
+2. job client request for new application id 
+3. it checks if the output directory is already created , if find a directory it will throw an error saying 		directory already exists and stop there itself , if it passes previous check then it verify input directory 
+4.  after this it copies the resources to hdfs with very high replication 
+5.  and then finally submit the job to the resource manager 
+6. then comes job initialazation phase 
+    resource manager -- this is further catagorised into two responsibility area that it handles 
+    				1) scheduling -- which only does scheduling 
+    			    2) application manager -- which monitors the status of jobs 
+
+    so as soon as job scheduler picks up the job it contact the node manager to start a new container 
+    and launch new application master for the job , application master creates object for book keeping purposes
+    and task management purposes , it retrives the split from hdfs and create one task per split , then application master decide how to run a task , if job is small (Uber task) then it decide to run it on the same jvm itself 
+    Since overhead of alloacting a new container and running them could cost a lot more 	then running it on one node itself , these tyoe of jobs that application master decide to run on same jvm are known as uber task 
+
+    Task Assignment 
+    If the task is not ubered , it request resource manager to allocate the resources needed .
+    scheduler at this time knows where the splits are located , it get this information from the heartbeat of node manager and using this information to consider the data locality while allocating the resources , it try as far as possible to allocate the  node so that the data locality is available , if that cannot be the case it consider the rack local nodes , if it is not able find such a rack local node , it allocate any node randomly from the availble nodes 
+
+    Task execution 
+    Application master contacts the node manager to launch the container then the yarn child is launched , it is just a java class named yarn child 
+    yarn child run on a seperate jvm to isolate long running system from the user code 
+    yarn doesn't support jvm reuse 
+    yarn child retrives all resources from hdfs and localize them and run map/reduce task 
+
+    Progress and udate phase 
+    yarn child send report to the application master every 3 seconds 
+    d
+
+    Job completion phase 
+    application master and task container cleanup the intermidiate data and terminates itself after job completion 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
