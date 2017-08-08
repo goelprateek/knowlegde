@@ -1,0 +1,56 @@
+Recovering deleted files from HDFS (with -skipTrash) options
+
+
+1.  1).Lets create a sample file in HDFS
+
+su - hdfs
+hadoop fs -put /etc/passwd /tmp
+hadoop fs -ls /tmp/passwd
+
+2 hadoop fs -ls /tmp/passwd
+
+hadoop fs -rmr -skipTrash /tmp/passwd
+
+3).Stop the HDFS service via Ambari.
+
+4). Go to Namenode metadata directory(dfs.namenode.name.dir) .
+   cd /data/hadoop/hdfs/namenode
+   cd current
+   Look for a file with the name starting “edits_inprogress”. This should be most recent file where all the transactions are pushed to.
+
+5) Convert the binary edits file to xml format.To convert the edits_inprogress file to XML,Use
+
+   hdfs oev -i edits_inprogress_0000000000000001689 -o edits_inprogress_0000000000000001689.xml
+
+6) Open the file and look for the transaction which recorded the delete operation of the file /tmp/passwdIn our case it looked like below.
+
+<RECORD>
+	<OPCODE>OP_DELETE</OPCODE>
+	<DATA>
+	   <TXID>1792</TXID>
+	   <LENGTH>0</LENGTH>
+	   <PATH>/tmp/passwd</PATH>
+	   <TIMESTAMP>1459943154392</TIMESTAMP>
+	   <RPC_CLIENTID>7aa59270-a89f-4113-98b5-6031ba898a8c</RPC_CLIENTID>
+	   <RPC_CALLID>1</RPC_CALLID>
+	</DATA>
+</RECORD>
+
+7) Remove the complete entry (RECORD to RECORD) and save the XML file
+
+8) Convert back the XML to binary format.
+
+   hdfs oev -i edits_inprogress_0000000000000001689.xml -o edits_inprogress_0000000000000001689 -p binary
+
+9)  If the interested transaction entry in the edits_inprogress is the last entry , then you could just start up the name   node,which brings you back the lost /tmp/passwd file to the /tmp directory. If you see any further transaction post the accidental delete, then you need to run name node recovery command as below
+
+hadoop namenode -recover
+
+10) Now Restart the the HDFS via Ambari and check for the lost file using
+ hadoop fs -ls /tmp/passwd
+
+
+
+
+
+
