@@ -35,3 +35,7 @@ THP=`find /sys/kernel/mm/ -name transparent_hugepage -type d | tail -n 1`
 
 cat .ssh/id_rsa.pub | ssh maxiqprod2 'cat >> .ssh/authorized_key
 
+#commond to update date from internet using terminal
+sudo date -s "$(wget -qSO- --max-redirect=0 google.com 2>&1 | grep Date: | cut -d' ' -f5-8)Z"
+
+
